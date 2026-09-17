@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href = "style/login.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="assets/logo-csspp.png">
     <title>Login</title>
 </head>
 <body>
@@ -39,7 +40,7 @@
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error || "Não foi possível entrar.");
-                localStorage.setItem("csspp-token", data.token);
+                sessionStorage.setItem("csspp-token", data.token);
                 window.location.href = "index.html";
             } catch (error) {
                 feedback.textContent = error.message;

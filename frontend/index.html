@@ -4,6 +4,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link href="style/style.css" rel="stylesheet">
+	<link rel="icon" type="image/png" href="assets/logo-csspp.png">
 	<title>Gestão de mensalidades | CSSPP</title>
 </head>
 <body>
@@ -19,6 +20,7 @@
 				<a class="nav-link active" href="#inicio"><span class="nav-icon">⌂</span>Visão geral</a>
 				<a class="nav-link" href="#socios"><span class="nav-icon">♙</span>Sócios</a>
 				<a class="nav-link" href="#bar"><span class="nav-icon">▣</span>Total do bar</a>
+				<a class="nav-link" href="#editarSocios"><span class="nav-icon">✎</span>Editar sócios</a>
 			</nav>
 
 			<div class="sidebar-footer">
@@ -133,6 +135,21 @@
 						<tbody id="listaSocios"><tr class="empty-row"><td colspan="7">Nenhum sócio cadastrado ainda.</td></tr></tbody>
 					</table>
 				</div>
+			</section>
+
+			<!-- Aba exclusiva para alterar os dados cadastrais dos sócios. -->
+			<section class="panel editar-panel" id="editarSocios" aria-labelledby="tituloEditarSocios">
+				<div class="panel-heading"><div><p class="eyebrow">Cadastro</p><h2 id="tituloEditarSocios">Editar sócio</h2></div><span class="panel-mark">✎</span></div>
+				<form id="formEditarSocio" class="form-grid">
+					<div class="field full-width"><label for="socioEditar">Sócio</label><select id="socioEditar" required><option value="">Selecione um sócio</option></select></div>
+					<div class="field full-width"><label for="editarNomeCompleto">Nome completo</label><input id="editarNomeCompleto" required></div>
+					<div class="field full-width"><label for="editarNomeExibicao">Nome para exibição</label><input id="editarNomeExibicao" required></div>
+					<div class="field"><label for="editarDocumento">CPF ou matrícula</label><input id="editarDocumento" required></div>
+					<div class="field"><label for="editarTelefone">WhatsApp</label><input id="editarTelefone" type="tel" required></div>
+					<div class="field full-width"><label for="editarCategoria">Categoria</label><select id="editarCategoria" required><option value="civil">Civil · R$ 50,00</option><option value="militar">Militar · R$ 30,00</option><option value="diretoria">Diretoria · sem mensalidade</option><option value="ex-presidente">Ex-presidente · sem mensalidade</option><option value="funcionario">Funcionário do clube · sem mensalidade</option></select></div>
+					<button class="primary-button full-width" type="submit">Salvar alterações</button>
+				</form>
+				<p class="form-feedback" id="feedbackEdicao" role="status"></p>
 			</section>
 
 			<section class="panel user-panel" id="usuarios" hidden aria-labelledby="tituloUsuarios">

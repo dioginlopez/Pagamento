@@ -1,4 +1,4 @@
-const token = localStorage.getItem("csspp-token");
+const token = sessionStorage.getItem("csspp-token");
 let month = new Date().toISOString().slice(0, 7);
 const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const typeNames = { militar: "Militar", civil: "Civil", diretoria: "Diretoria", "ex-presidente": "Ex-presidente", funcionario: "Funcionário do clube" };
@@ -17,7 +17,7 @@ async function api(url, options = {}) {
         throw new Error("Não foi possível conectar ao servidor. Abra o sistema por http://localhost:3000 e mantenha o backend ligado.");
     }
     if (response.status === 401) {
-        localStorage.removeItem("csspp-token");
+        sessionStorage.removeItem("csspp-token");
         window.location.replace("login.html");
         throw new Error("Sessão expirada.");
     }
@@ -77,6 +77,23 @@ function renderBarSelect() {
     document.getElementById("valorBarMes").value = select.value ? state.members.find((member) => String(member.id) === select.value)?.bar || "" : "";
 }
 
+function renderEditSelect() {
+    const select = document.getElementById("socioEditar");
+    const current = select.value;
+    select.innerHTML = '<option value="">Selecione um sócio</option>' + state.members.map((member) => `<option value="${member.id}">${escapeHtml(displayName(member))}</option>`).join("");
+    select.value = current;
+}
+
+function preencherEdicao() {
+    const member = state.members.find((item) => String(item.id) === document.getElementById("socioEditar").value);
+    if (!member) return;
+    document.getElementById("editarNomeCompleto").value = member.fullName;
+    document.getElementById("editarNomeExibicao").value = member.displayName;
+    document.getElementById("editarDocumento").value = member.document;
+    document.getElementById("editarTelefone").value = member.phone;
+    document.getElementById("editarCategoria").value = member.category;
+}
+
 function renderMembers() {
     const list = document.getElementById("listaSocios");
     const search = document.getElementById("buscaSocio").value.toLowerCase().trim();
@@ -108,6 +125,7 @@ function renderMembers() {
 function render() {
     updateSummary();
     renderBarSelect();
+    renderEditSelect();
     renderMembers();
 }
 
@@ -180,8 +198,32 @@ document.getElementById("socioBar").addEventListener("change", renderBarSelect);
 document.getElementById("buscaSocio").addEventListener("input", renderMembers);
 document.getElementById("filtroPagamento").addEventListener("change", renderMembers);
 
+document.getElementById("socioEditar").addEventListener("change", preencherEdicao);
+
+document.getElementById("formEditarSocio").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const memberId = document.getElementById("socioEditar").value;
+    const feedback = document.getElementById("feedbackEdicao");
+    try {
+        await api(`/api/members/${memberId}`, { method: "PUT", body: JSON.stringify({
+            fullName: document.getElementById("editarNomeCompleto").value,
+            displayName: document.getElementById("editarNomeExibicao").value,
+            document: document.getElementById("editarDocumento").value,
+            phone: document.getElementById("editarTelefone").value,
+            category: document.getElementById("editarCategoria").value
+        }) });
+        await load();
+        preencherEdicao();
+        feedback.textContent = "Dados do sócio atualizados.";
+        toast("Cadastro atualizado com sucesso.");
+    } catch (error) {
+        feedback.textContent = error.message;
+        feedback.style.color = "#b00000";
+    }
+});
+
 document.getElementById("botaoSair").addEventListener("click", () => {
-    localStorage.removeItem("csspp-token");
+    sessionStorage.removeItem("csspp-token");
     window.location.replace("login.html");
 });
 

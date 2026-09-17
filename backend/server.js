@@ -16,6 +16,7 @@ const whatsappToken = process.env.WHATSAPP_TOKEN || "";
 const whatsappNumeroId = process.env.WHATSAPP_PHONE_NUMBER_ID || "";
 const whatsappModelo = process.env.WHATSAPP_TEMPLATE_NAME || "cobranca_mensalidade";
 const whatsappIdioma = process.env.WHATSAPP_TEMPLATE_LANGUAGE || "pt_BR";
+const whatsappFigurinhaUrl = process.env.WHATSAPP_STICKER_URL || "";
 const chavePix = process.env.PIX_KEY || "";
 const segredoWebhookPix = process.env.PIX_WEBHOOK_SECRET || "";
 const horaCobranca = Number(process.env.COBRANCA_HORA || 8);
@@ -124,6 +125,14 @@ async function enviarWhatsApp(socio, mes, total) {
     body: JSON.stringify({ messaging_product: "whatsapp", to: numeroWhatsApp(socio.phone), type: "template", template: { name: whatsappModelo, language: { code: whatsappIdioma }, components: [{ type: "body", parameters: [{ type: "text", text: socio.displayName }, { type: "text", text: `R$ ${total.toFixed(2).replace(".", ",")}` }, { type: "text", text: mes }] }] } })
   });
   if (!resposta.ok) throw new Error(`WhatsApp retornou HTTP ${resposta.status}.`);
+  if (whatsappFigurinhaUrl) {
+    const imagem = await fetch(`https://graph.facebook.com/v22.0/${whatsappNumeroId}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${whatsappToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ messaging_product: "whatsapp", to: numeroWhatsApp(socio.phone), type: "image", image: { link: whatsappFigurinhaUrl, caption: "CSSPP - Obrigado por participar do clube!" } })
+    });
+    if (!imagem.ok) throw new Error(`Figurinha do WhatsApp retornou HTTP ${imagem.status}.`);
+  }
 }
 
 // Envia uma única cobrança por competência e evita reenvios duplicados.
@@ -209,6 +218,19 @@ app.post("/api/members", autenticar, (req, res) => {
     const member = validarSocio(req.body);
     const result = executar("INSERT INTO members (full_name, display_name, document, phone, category) VALUES (?, ?, ?, ?, ?)", [member.fullName, member.displayName, member.document, member.phone, member.category]);
     res.status(201).json({ id: result.lastInsertRowid });
+  } catch (error) {
+    res.status(400).json({ error: error.message.includes("UNIQUE") ? "CPF ou matricula ja cadastrado." : error.message });
+  }
+});
+
+app.put("/api/members/:id", autenticar, (req, res) => {
+  try {
+    const member = validarSocio(req.body);
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) throw new Error("Socio invalido.");
+    const result = executar("UPDATE members SET full_name = ?, display_name = ?, document = ?, phone = ?, category = ? WHERE id = ?", [member.fullName, member.displayName, member.document, member.phone, member.category, id]);
+    if (!result.changes) return res.status(404).json({ error: "Socio nao encontrado." });
+    res.json({ ok: true });
   } catch (error) {
     res.status(400).json({ error: error.message.includes("UNIQUE") ? "CPF ou matricula ja cadastrado." : error.message });
   }
