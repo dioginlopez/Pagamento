@@ -59,6 +59,8 @@ h1 { margin-bottom: 7px; font-family: Georgia, serif; font-size: clamp(27px, 3vw
 h2 { margin: 0; font-size: 19px; }
 .periodo { margin: 0; color: var(--muted); font-size: 13px; }
 .topbar-actions { display: flex; align-items: center; gap: 16px; }
+.seletor-mes { color: #7c7e86; font-size: 11px; }
+.mes-input { height: 36px; padding: 0 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: #5e6068; font-size: 12px; }
 .usuario-atual { color: #5e6068; font-size: 12px; }
 .mes-badge { padding: 9px 13px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: #5e6068; font-size: 12px; text-transform: capitalize; }
 .avatar { width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--red); color: #fff; font-size: 11px; font-weight: bold; }
@@ -83,5 +85,5 @@ h2 { margin: 0; font-size: 19px; }
 .user-panel { margin-top: 19px; }
 
 @media (max-width: 1050px) { .grade-resumo { grid-template-columns: repeat(2, 1fr); }.workspace-grid { grid-template-columns: 1fr; } }
-@media (max-width: 720px) { .barra-lateral { position: static; width: 100%; height: auto; padding: 15px; }.app-shell { display: block; }.brand { padding: 0 8px 15px; }.main-nav { grid-template-columns: repeat(3, 1fr); }.nav-link { justify-content: center; padding: 10px 5px; font-size: 11px; }.nav-icon { display: none; }.sidebar-footer { display: none; }.conteudo { width: 100%; margin-left: 0; padding: 27px 16px 40px; }.topbar { margin-bottom: 23px; }.topbar-actions { align-items: flex-start; }.mes-badge { display: none; }.grade-resumo { gap: 10px; }.cartao-resumo { padding: 13px; }.cartao-resumo strong { font-size: 17px; }.panel { padding: 19px 16px; }.table-panel { padding: 19px 0 8px; }.table-heading { align-items: flex-start; flex-direction: column; padding: 0 16px; }.table-tools { width: 100%; }.search-box { flex: 1; }.table-tools select { width: 110px; } }
+@media (max-width: 720px) { .barra-lateral { position: static; width: 100%; height: auto; padding: 15px; }.app-shell { display: block; }.brand { padding: 0 8px 15px; }.main-nav { grid-template-columns: repeat(3, 1fr); }.nav-link { justify-content: center; padding: 10px 5px; font-size: 11px; }.nav-icon { display: none; }.sidebar-footer { display: none; }.conteudo { width: 100%; margin-left: 0; padding: 27px 16px 40px; }.topbar { margin-bottom: 23px; }.topbar-actions { align-items: flex-start; flex-wrap: wrap; }.seletor-mes { display: none; }.mes-input { width: 145px; }.mes-badge { display: none; }.grade-resumo { gap: 10px; }.cartao-resumo { padding: 13px; }.cartao-resumo strong { font-size: 17px; }.panel { padding: 19px 16px; }.table-panel { padding: 19px 0 8px; }.table-heading { align-items: flex-start; flex-direction: column; padding: 0 16px; }.table-tools { width: 100%; }.search-box { flex: 1; }.table-tools select { width: 110px; } }
 @media (max-width: 440px) { .grade-resumo { grid-template-columns: 1fr; }.form-grid { grid-template-columns: 1fr; }.full-width { grid-column: auto; }.fee-note { align-items: flex-start; flex-direction: column; }.topbar h1 { font-size: 28px; }.topbar-actions .avatar { display: none; } }

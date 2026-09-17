@@ -1,5 +1,5 @@
 const token = localStorage.getItem("csspp-token");
-const month = new Date().toISOString().slice(0, 7);
+let month = new Date().toISOString().slice(0, 7);
 const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const typeNames = { militar: "Militar", civil: "Civil", diretoria: "Diretoria", "ex-presidente": "Ex-presidente", funcionario: "Funcionário do clube" };
 const state = { members: [] };
@@ -114,6 +114,13 @@ async function load() {
         toast(error.message);
     }
 }
+
+document.getElementById("mesSelecionado").value = month;
+document.getElementById("mesSelecionado").addEventListener("change", async (event) => {
+    if (!event.target.value) return;
+    month = event.target.value;
+    await load();
+});
 
 async function loadCurrentUser() {
     const data = await api("/api/auth/me");
