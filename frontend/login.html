@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href = "style/login.css" rel="stylesheet">
+    <title>Login</title>
+</head>
+<body>
+    <main class="caixa">
+        <div class="img">
+            <img src="assets/logo-csspp.png" alt="Logo CSSPP">
+        </div>
+        <h1>Login</h1>
+        <p class="subtitulo">Entre para continuar</p>
+        <form id="loginForm">
+            <label for="usuario">Usuário</label>
+            <input id="usuario" name="usuario" type="text" placeholder="Digite seu usuário" autocomplete="username" required>
+
+            <label for="senha">Senha</label>
+            <input id="senha" name="senha" type="password" placeholder="Digite sua senha" autocomplete="current-password" required>
+
+            <button type="submit">Entrar</button>
+            <p class="login-feedback" id="loginFeedback" role="alert"></p>
+        </form>
+    </main>
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const feedback = document.getElementById("loginFeedback");
+            const button = event.target.querySelector("button");
+            button.disabled = true;
+            feedback.textContent = "Entrando...";
+            try {
+                const response = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username: document.getElementById("usuario").value, password: document.getElementById("senha").value })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || "Não foi possível entrar.");
+                localStorage.setItem("csspp-token", data.token);
+                window.location.href = "index.html";
+            } catch (error) {
+                feedback.textContent = error.message;
+                button.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

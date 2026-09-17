@@ -1,0 +1,17 @@
+{
+  "name": "csspp-gestao-clube",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gestao de socios, mensalidades e bar do CSSPP",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node --watch backend/server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "sql.js": "^1.13.0"
+  }
+}

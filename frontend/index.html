@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link href="style/style.css" rel="stylesheet">
+	<title>Gestão de mensalidades | CSSPP</title>
+</head>
+<body>
+	<div class="app-shell">
+		<!-- Navegação principal do sistema. -->
+		<aside class="barra-lateral">
+			<a class="brand" href="#inicio" aria-label="Página inicial CSSPP">
+				<img src="assets/logo-csspp.png" alt="Logo CSSPP">
+				<span>CSSPP<small>Gestão do clube</small></span>
+			</a>
+
+			<nav class="main-nav" aria-label="Navegação principal">
+				<a class="nav-link active" href="#inicio"><span class="nav-icon">⌂</span>Visão geral</a>
+				<a class="nav-link" href="#socios"><span class="nav-icon">♙</span>Sócios</a>
+				<a class="nav-link" href="#bar"><span class="nav-icon">▣</span>Total do bar</a>
+			</nav>
+
+			<div class="sidebar-footer">
+				<span class="status-dot"></span>
+				<span>Controle mensal ativo</span>
+			</div>
+		</aside>
+
+		<!-- Área central com resumo, cadastros e acompanhamento financeiro. -->
+		<main class="conteudo" id="inicio">
+			<header class="topbar">
+				<div>
+					<p class="eyebrow">Painel financeiro</p>
+					<h1>Mensalidades do clube</h1>
+					<p class="periodo" id="periodoAtual"></p>
+				</div>
+				<div class="topbar-actions">
+					<span class="mes-badge" id="mesBadge"></span>
+					<span class="usuario-atual" id="usuarioAtual">Usuário</span>
+					<button class="avatar" id="botaoSair" type="button" title="Sair da conta">SA</button>
+				</div>
+			</header>
+
+			<!-- Indicadores resumidos da competência selecionada. -->
+			<section class="grade-resumo" aria-label="Resumo do mês">
+				<article class="cartao-resumo destaque-vermelho">
+					<div class="icone-resumo">R$</div>
+					<div><span class="rotulo-resumo">A receber</span><strong id="totalReceber">R$ 0,00</strong><small>valores pendentes</small></div>
+				</article>
+				<article class="cartao-resumo destaque-verde">
+					<div class="icone-resumo">✓</div>
+					<div><span class="rotulo-resumo">Pagamentos</span><strong id="totalPagos">0</strong><small id="percentualPagos">0% dos sócios pagos</small></div>
+				</article>
+				<article class="cartao-resumo destaque-azul">
+					<div class="icone-resumo">♙</div>
+					<div><span class="rotulo-resumo">Sócios ativos</span><strong id="totalSocios">0</strong><small>cadastros no clube</small></div>
+				</article>
+				<article class="cartao-resumo destaque-dourado">
+					<div class="icone-resumo">▣</div>
+					<div><span class="rotulo-resumo">Total do bar</span><strong id="totalBar">R$ 0,00</strong><small>informado neste mês</small></div>
+				</article>
+			</section>
+
+			<section class="workspace-grid">
+				<article class="panel" id="socios">
+					<div class="panel-heading">
+						<div><p class="eyebrow">Novo cadastro</p><h2>Cadastrar sócio</h2></div>
+						<span class="panel-mark">+</span>
+					</div>
+					<form id="formSocio" class="form-grid">
+						<div class="field full-width">
+							<label for="nomeCompleto">Nome completo</label>
+							<input id="nomeCompleto" type="text" placeholder="Ex.: Leandro da Silva Leal" required>
+						</div>
+						<div class="field full-width">
+							<label for="nomeExibicao">Nome para exibição</label>
+							<input id="nomeExibicao" type="text" placeholder="Ex.: 3° Sgt Leal" required>
+						</div>
+						<div class="field">
+							<label for="documentoSocio">CPF ou matrícula</label>
+							<input id="documentoSocio" type="text" placeholder="000.000.000-00" required>
+						</div>
+						<div class="field">
+							<label for="telefoneSocio">WhatsApp</label>
+							<input id="telefoneSocio" type="tel" placeholder="(67) 99999-9999" required>
+						</div>
+						<div class="field full-width">
+							<label for="tipoSocio">Categoria</label>
+							<select id="tipoSocio" required>
+								<option value="civil">Civil · R$ 50,00</option>
+								<option value="militar">Militar · R$ 30,00</option>
+								<option value="diretoria">Diretoria · sem mensalidade</option>
+								<option value="ex-presidente">Ex-presidente · sem mensalidade</option>
+								<option value="funcionario">Funcionário do clube · sem mensalidade</option>
+							</select>
+						</div>
+						<button class="primary-button full-width" type="submit">Adicionar sócio</button>
+					</form>
+					<div class="fee-note"><span>Mensalidade automática</span><strong>Militar R$ 30,00 · Civil R$ 50,00 · Isentos pagam só o bar</strong></div>
+				</article>
+
+				<article class="panel" id="bar">
+					<div class="panel-heading">
+						<div><p class="eyebrow">Fechamento mensal</p><h2>Valor total do bar</h2></div>
+						<span class="panel-mark gold">R$</span>
+					</div>
+					<form id="formBar" class="form-grid">
+						<div class="field full-width">
+							<label for="socioBar">Sócio</label>
+							<select id="socioBar" required><option value="">Selecione um sócio</option></select>
+						</div>
+						<div class="field full-width">
+							<label for="valorBarMes">Total do bar do sócio em <span id="mesBarLabel"></span></label>
+							<input id="valorBarMes" type="number" min="0" step="0.01" placeholder="0,00" required>
+						</div>
+						<button class="secondary-button full-width" type="submit">Salvar total do sócio</button>
+					</form>
+					<p class="form-feedback" id="feedbackBar" role="status">Informe o total consumido pelo sócio no mês.</p>
+				</article>
+			</section>
+
+			<section class="panel table-panel" aria-labelledby="tituloPagamentos">
+				<div class="panel-heading table-heading">
+					<div><p class="eyebrow">Acompanhamento</p><h2 id="tituloPagamentos">Status das mensalidades</h2></div>
+					<div class="table-tools"><label class="search-box"><span>⌕</span><input id="buscaSocio" type="search" placeholder="Buscar sócio"></label><select id="filtroPagamento" aria-label="Filtrar pagamentos"><option value="todos">Todos</option><option value="pendentes">Pendentes</option><option value="pagos">Pagos</option></select><button class="outline-button" id="exportarPlanilha" type="button">Exportar planilha</button></div>
+				</div>
+				<div class="table-scroll">
+					<table>
+						<thead><tr><th>Sócio</th><th>Categoria</th><th>Mensalidade</th><th>Bar no mês</th><th>Total a cobrar</th><th>Status</th><th>Ações</th></tr></thead>
+						<tbody id="listaSocios"><tr class="empty-row"><td colspan="7">Nenhum sócio cadastrado ainda.</td></tr></tbody>
+					</table>
+				</div>
+			</section>
+
+			<section class="panel user-panel" id="usuarios" hidden aria-labelledby="tituloUsuarios">
+				<div class="panel-heading">
+					<div><p class="eyebrow">Administração</p><h2 id="tituloUsuarios">Cadastrar usuário</h2></div>
+					<span class="panel-mark">+</span>
+				</div>
+				<form id="formUsuario" class="form-grid">
+					<div class="field">
+						<label for="novoUsuario">Nome de usuário</label>
+						<input id="novoUsuario" type="text" minlength="3" maxlength="60" placeholder="Ex.: secretario" required>
+					</div>
+					<div class="field">
+						<label for="novaSenha">Senha</label>
+						<input id="novaSenha" type="password" minlength="8" placeholder="Mínimo de 8 caracteres" required>
+					</div>
+					<button class="primary-button full-width" type="submit">Cadastrar usuário</button>
+				</form>
+				<p class="form-feedback" id="feedbackUsuario" role="status"></p>
+			</section>
+		</main>
+	</div>
+
+	<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+	<script type="text/legacy">
+		const STORAGE_KEY = "csspp-gestao-clube";
+		const TAXAS = { militar: 30, civil: 50, diretoria: 0, "ex-presidente": 0, funcionario: 0 };
+		const nomesTipos = { militar: "Militar", civil: "Civil", diretoria: "Diretoria", "ex-presidente": "Ex-presidente", funcionario: "Funcionário do clube" };
+		const estado = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"socios":[],"barPorMes":{}}');
+		estado.barPorMes = estado.barPorMes && typeof estado.barPorMes === "object" ? estado.barPorMes : {};
+		const moeda = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+		const dataAtual = new Date();
+		const mesAtual = dataAtual.toISOString().slice(0, 7);
+
+		function salvar() {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
+		}
+
+		function mostrarToast(mensagem) {
+			const toast = document.getElementById("toast");
+			toast.textContent = mensagem;
+			toast.classList.add("visible");
+			window.setTimeout(() => toast.classList.remove("visible"), 2600);
+		}
+
+		function nomeExibicao(socio) {
+			return socio.nomeExibicao || socio.nome;
+		}
+
+		function numeroWhatsApp(telefone) {
+			const numero = (telefone || "").replace(/\D/g, "");
+			return numero.length >= 12 ? numero : `55${numero}`;
+		}
+
+		function linkWhatsApp(socio, mensalidade, bar, total) {
+			if (!socio.telefone || total === 0 || socio.pago) return "";
+			const mensagem = `Olá, ${nomeExibicao(socio)}. Identificamos uma pendência de ${moeda.format(total)} referente a ${mesAtual}. Mensalidade: ${moeda.format(mensalidade)}. Bar: ${moeda.format(bar)}. Poderia verificar o pagamento?`;
+			return `<a class="whatsapp-link" href="https://wa.me/${numeroWhatsApp(socio.telefone)}?text=${encodeURIComponent(mensagem)}" target="_blank" rel="noopener" title="Abrir cobrança no WhatsApp">WhatsApp</a>`;
+		}
+
+		function totaisBarDoMes() {
+			return estado.barPorMes[mesAtual] || {};
+		}
+
+		function totalBarDoSocio(id) {
+			return totaisBarDoMes()[id] || 0;
+		}
+
+		function atualizarSelecaoBar() {
+			const select = document.getElementById("socioBar");
+			const valorAtual = select.value;
+			select.innerHTML = '<option value="">Selecione um sócio</option>';
+			estado.socios.forEach((socio) => {
+				select.insertAdjacentHTML("beforeend", `<option value="${socio.id}">${nomeExibicao(socio)}</option>`);
+			});
+			select.value = valorAtual;
+		}
+
+		function atualizarResumo() {
+			const pagos = estado.socios.filter((socio) => socio.pago).length;
+			const pendentes = estado.socios.filter((socio) => !socio.pago);
+			const receber = pendentes.reduce((total, socio) => total + TAXAS[socio.tipo] + totalBarDoSocio(socio.id), 0);
+			const totalBar = Object.values(totaisBarDoMes()).reduce((total, valor) => total + Number(valor), 0);
+			const percentual = estado.socios.length ? Math.round((pagos / estado.socios.length) * 100) : 0;
+			document.getElementById("totalReceber").textContent = moeda.format(receber);
+			document.getElementById("totalPagos").textContent = pagos;
+			document.getElementById("percentualPagos").textContent = `${percentual}% dos sócios pagos`;
+			document.getElementById("totalSocios").textContent = estado.socios.length;
+			document.getElementById("totalBar").textContent = moeda.format(totalBar);
+		}
+
+		function renderizarSocios() {
+			const lista = document.getElementById("listaSocios");
+			const busca = document.getElementById("buscaSocio").value.toLowerCase().trim();
+			const filtro = document.getElementById("filtroPagamento").value;
+			const socios = estado.socios.filter((socio) => {
+				const combinaBusca = nomeExibicao(socio).toLowerCase().includes(busca) || socio.nome.toLowerCase().includes(busca) || socio.documento.toLowerCase().includes(busca);
+				const combinaFiltro = filtro === "todos" || (filtro === "pagos" && socio.pago) || (filtro === "pendentes" && !socio.pago);
+				return combinaBusca && combinaFiltro;
+			});
+			if (!socios.length) {
+				lista.innerHTML = '<tr class="empty-row"><td colspan="7">Nenhum sócio encontrado.</td></tr>';
+				return;
+			}
+			lista.innerHTML = socios.map((socio) => {
+				const bar = totalBarDoSocio(socio.id);
+				const nome = nomeExibicao(socio);
+				const total = TAXAS[socio.tipo] + bar;
+				const semCobranca = total === 0;
+				const status = semCobranca ? "Sem cobrança" : socio.pago ? "Pago" : "Pendente";
+				const acaoPagamento = semCobranca ? "" : `title="${socio.pago ? "Desmarcar pagamento" : "Confirmar pagamento"}"`;
+				return `<tr>
+					<td><div class="member-cell"><span class="member-avatar">${nome.charAt(0).toUpperCase()}</span><div><strong>${nome}</strong><small>${socio.nome} · ${socio.documento}</small></div></div></td>
+					<td><span class="category ${socio.tipo}">${nomesTipos[socio.tipo]}</span></td>
+					<td>${moeda.format(TAXAS[socio.tipo])}</td><td>${moeda.format(bar)}</td><td><strong>${moeda.format(total)}</strong></td>
+					<td><button class="status-button ${semCobranca ? "exempt" : socio.pago ? "paid" : "pending"}" ${acaoPagamento} ${semCobranca ? "" : `data-action="toggle-payment" data-id="${socio.id}"`}>${socio.pago ? "Pago" : semCobranca ? status : "Confirmar pagamento"}</button></td>
+					<td><div class="action-cell">${linkWhatsApp(socio, TAXAS[socio.tipo], bar, total)}<button class="delete-button" type="button" title="Excluir sócio" data-action="delete-member" data-id="${socio.id}">×</button></div></td>
+				</tr>`;
+			}).join("");
+		}
+
+		function renderizar() {
+			atualizarResumo();
+			atualizarSelecaoBar();
+			renderizarSocios();
+			document.getElementById("valorBarMes").value = document.getElementById("socioBar").value ? totalBarDoSocio(document.getElementById("socioBar").value) : "";
+		}
+
+		document.getElementById("formSocio").addEventListener("submit", (evento) => {
+			evento.preventDefault();
+			const tipo = document.getElementById("tipoSocio").value;
+			estado.socios.push({ id: crypto.randomUUID(), nome: document.getElementById("nomeCompleto").value.trim(), nomeExibicao: document.getElementById("nomeExibicao").value.trim(), documento: document.getElementById("documentoSocio").value.trim(), telefone: document.getElementById("telefoneSocio").value.trim(), tipo, pago: false });
+			salvar();
+			evento.target.reset();
+			renderizar();
+			mostrarToast("Sócio cadastrado com sucesso.");
+		});
+
+		document.getElementById("formBar").addEventListener("submit", (evento) => {
+			evento.preventDefault();
+			const socioId = document.getElementById("socioBar").value;
+			if (!estado.barPorMes[mesAtual] || typeof estado.barPorMes[mesAtual] !== "object") estado.barPorMes[mesAtual] = {};
+			estado.barPorMes[mesAtual][socioId] = Number(document.getElementById("valorBarMes").value);
+			salvar();
+			renderizar();
+			mostrarToast("Total do bar do sócio atualizado.");
+		});
+
+		document.getElementById("socioBar").addEventListener("change", () => {
+			document.getElementById("valorBarMes").value = document.getElementById("socioBar").value ? totalBarDoSocio(document.getElementById("socioBar").value) : "";
+		});
+
+		document.addEventListener("click", (evento) => {
+			const alvo = evento.target.closest("[data-action]");
+			if (!alvo) return;
+			const id = alvo.dataset.id;
+			if (alvo.dataset.action === "toggle-payment") {
+				const socio = estado.socios.find((item) => item.id === id);
+				socio.pago = !socio.pago;
+				salvar();
+				renderizar();
+				mostrarToast(socio.pago ? "Pagamento confirmado." : "Pagamento voltou para pendente.");
+			}
+			if (alvo.dataset.action === "delete-member" && window.confirm("Excluir este sócio?")) {
+				estado.socios = estado.socios.filter((item) => item.id !== id);
+				salvar();
+				renderizar();
+				mostrarToast("Sócio removido.");
+			}
+		});
+
+		document.getElementById("buscaSocio").addEventListener("input", renderizarSocios);
+		document.getElementById("filtroPagamento").addEventListener("change", renderizarSocios);
+		document.getElementById("exportarPlanilha").addEventListener("click", () => {
+			const cabecalho = ["Nome completo", "Nome para exibicao", "CPF ou matricula", "WhatsApp", "Categoria", "Mensalidade", "Bar no mes", "Total a cobrar", "Situacao"];
+			const linhas = estado.socios.map((socio) => {
+				const bar = totalBarDoSocio(socio.id);
+				const total = TAXAS[socio.tipo] + bar;
+				return [socio.nome, nomeExibicao(socio), socio.documento, socio.telefone || "", nomesTipos[socio.tipo], TAXAS[socio.tipo].toFixed(2).replace(".", ","), bar.toFixed(2).replace(".", ","), total.toFixed(2).replace(".", ","), total === 0 ? "Sem cobrança" : socio.pago ? "Pago" : "Pendente"];
+			});
+			const escapar = (valor) => `"${String(valor).replace(/"/g, '""')}"`;
+			const csv = [cabecalho, ...linhas].map((linha) => linha.map(escapar).join(";")).join("\r\n");
+			const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = `socios-${mesAtual}.csv`;
+			link.click();
+			URL.revokeObjectURL(url);
+			mostrarToast("Planilha exportada com sucesso.");
+		});
+		const mesFormatado = dataAtual.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+		document.getElementById("periodoAtual").textContent = `Acompanhe as cobranças e os totais do bar de ${mesFormatado}.`;
+		document.getElementById("mesBadge").textContent = mesFormatado;
+		document.getElementById("mesBarLabel").textContent = mesFormatado;
+		renderizar();
+	</script>
+	<script src="app.js"></script>
+</body>
+</html>

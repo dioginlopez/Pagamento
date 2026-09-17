@@ -1,0 +1,148 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 24px;
+    background: linear-gradient(135deg, #8f0000 0%, #d30000 52%, #ff4b3e 100%);
+    color: #292929;
+    font-family: Arial, sans-serif;
+}
+
+.caixa {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: min(100%, 410px);
+    padding: 36px 40px 40px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 18px;
+    box-shadow: 0 20px 45px rgba(66, 0, 0, 0.28);
+}
+
+.img {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 14px;
+}
+
+.img img {
+    display: block;
+    width: 142px;
+    height: auto;
+}
+
+.caixa h1 {
+    margin: 0;
+    color: #8f0000;
+    font-size: 28px;
+    text-align: center;
+}
+
+.subtitulo {
+    margin: 8px 0 28px;
+    color: #6c6c6c;
+    font-size: 14px;
+    text-align: center;
+}
+
+.caixa form {
+    width: 100%;
+}
+
+.caixa label {
+    display: block;
+    margin: 0 0 7px;
+    color: #3f3f3f;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.caixa input[type="text"],
+.caixa input[type="password"] {
+    width: 100%;
+    height: 46px;
+    margin-bottom: 18px;
+    padding: 0 14px;
+    background-color: #fff;
+    border: 1px solid #d5d5d5;
+    border-radius: 9px;
+    color: #292929;
+    font: inherit;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.caixa input:focus {
+    border-color: #d30000;
+    box-shadow: 0 0 0 3px rgba(211, 0, 0, 0.14);
+}
+
+.caixa input::placeholder {
+    color: #999;
+}
+
+.caixa button {
+    width: 100%;
+    height: 46px;
+    margin-top: 4px;
+    background-color: #d30000;
+    color: #fff;
+    font: inherit;
+    font-weight: bold;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.caixa button:hover {
+    background-color: #a00000;
+}
+
+.caixa button:active {
+    transform: translateY(1px);
+}
+
+.caixa button:disabled {
+    cursor: wait;
+    opacity: 0.7;
+}
+
+.login-feedback {
+    min-height: 18px;
+    margin: 13px 0 0;
+    color: #b00000;
+    font-size: 13px;
+    text-align: center;
+}
+
+.caixa .error {
+    color: red;
+    text-align: center;
+    margin-bottom: 10px;
+}
+.caixa .success {
+    color: green;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 16px;
+    }
+
+    .caixa {
+        padding: 28px 24px 30px;
+    }
+}
