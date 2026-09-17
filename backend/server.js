@@ -210,7 +210,7 @@ app.get("/api/dashboard", autenticar, (req, res) => {
 
 app.get("/api/users", autenticar, (req, res) => {
   if (req.user.role !== "admin") return res.status(403).json({ error: "Apenas administradores podem consultar usuarios." });
-  res.json({ users: buscarTodos("SELECT username, role, created_at AS createdAt FROM users ORDER BY username COLLATE NOCASE") });
+  res.json({ users: buscarTodos("SELECT id, username, role, created_at AS createdAt FROM users ORDER BY username COLLATE NOCASE") });
 });
 
 app.post("/api/members", autenticar, (req, res) => {
@@ -279,6 +279,22 @@ app.post("/api/users", autenticar, (req, res) => {
     res.status(201).json({ id: result.lastInsertRowid, username });
   } catch (error) {
     res.status(400).json({ error: error.message.includes("UNIQUE") ? "Usuario ja cadastrado." : error.message });
+  }
+});
+
+app.delete("/api/users/:id", autenticar, (req, res) => {
+  try {
+    if (req.user.role !== "admin") return res.status(403).json({ error: "Apenas administradores podem excluir usuarios." });
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) throw new Error("Usuario invalido.");
+    if (id === Number(req.user.id)) return res.status(400).json({ error: "Voce nao pode excluir o proprio usuario." });
+    const usuario = buscarUm("SELECT role FROM users WHERE id = ?", [id]);
+    if (!usuario) return res.status(404).json({ error: "Usuario nao encontrado." });
+    if (usuario.role === "admin" && Number(buscarUm("SELECT COUNT(*) AS total FROM users WHERE role = 'admin'").total) <= 1) return res.status(400).json({ error: "O sistema precisa manter pelo menos um administrador." });
+    executar("DELETE FROM users WHERE id = ?", [id]);
+    res.status(204).end();
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 

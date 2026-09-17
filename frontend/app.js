@@ -2,7 +2,7 @@ const token = sessionStorage.getItem("csspp-token");
 let month = new Date().toISOString().slice(0, 7);
 const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const typeNames = { militar: "Militar", civil: "Civil", diretoria: "Diretoria", "ex-presidente": "Ex-presidente", funcionario: "Funcionário do clube" };
-const state = { members: [], users: [], pixKey: "" };
+const state = { members: [], users: [], pixKey: "", currentUser: "" };
 
 if (!token) window.location.replace("login.html");
 
@@ -41,13 +41,13 @@ function whatsappNumber(phone) {
 
 function whatsappLink(member) {
     if (!member.phone || member.paid || member.total === 0) return "";
-    const pix = state.pixKey ? ` Chave PIX: ${state.pixKey}.` : "";
-    const message = `🔔 *CSSPP - Lembrete de cobrança*\n\nOlá, ${displayName(member)}!\n\nIdentificamos uma pendência de *${currency.format(member.total)}* referente a *${month}*.\nMensalidade: ${currency.format(member.fee)}\nBar: ${currency.format(member.bar)}\n\n${pix}\nApós o pagamento, envie o comprovante. Obrigado!`;
+    const pix = state.pixKey ? `💳 *PAGUE VIA PIX*\nChave PIX: *${state.pixKey}*` : "💳 Chave PIX ainda não configurada pelo clube.";
+    const message = `🔔 *CSSPP - Lembrete de cobrança*\n\nOlá, ${displayName(member)}!\n\nIdentificamos uma pendência de *${currency.format(member.total)}* referente a *${month}*.\nMensalidade: ${currency.format(member.fee)}\nBar: ${currency.format(member.bar)}\n\n${pix}\n\nApós o pagamento, envie o comprovante. Obrigado!`;
     return `<a class="whatsapp-link" href="https://wa.me/${whatsappNumber(member.phone)}?text=${encodeURIComponent(message)}" target="_blank" rel="noopener">WhatsApp</a>`;
 }
 
 function renderUsers() {
-    document.getElementById("listaUsuarios").innerHTML = state.users.length ? `<div class="lista-usuarios">${state.users.map((user) => `<div class="usuario-item"><span class="usuario-inicial">${escapeHtml(user.username.charAt(0).toUpperCase())}</span><div><strong>${escapeHtml(user.username)}</strong><small>${escapeHtml(user.role === "admin" ? "Administrador" : "Usuário" )}</small></div></div>`).join("")}</div>` : '<p class="lista-vazia">Nenhum usuário encontrado.</p>';
+    document.getElementById("listaUsuarios").innerHTML = state.users.length ? `<div class="lista-usuarios">${state.users.map((user) => `<div class="usuario-item"><span class="usuario-inicial">${escapeHtml(user.username.charAt(0).toUpperCase())}</span><div><strong>${escapeHtml(user.username)}</strong><small>${escapeHtml(user.role === "admin" ? "Administrador" : "Usuário" )}</small></div>${user.username === state.currentUser ? '<span class="usuario-atual-tag">Você</span>' : `<button class="delete-button" type="button" title="Excluir usuário" data-action="delete-user" data-id="${user.id}">×</button>`}</div>`).join("")}</div>` : '<p class="lista-vazia">Nenhum usuário encontrado.</p>';
 }
 
 function toast(message) {
@@ -153,6 +153,7 @@ document.getElementById("mesSelecionado").addEventListener("change", async (even
 
 async function loadCurrentUser() {
     const data = await api("/api/auth/me");
+    state.currentUser = data.user.username;
     document.getElementById("usuarioAtual").textContent = data.user.username;
     document.getElementById("botaoSair").title = `Sair da conta de ${data.user.username}`;
     document.getElementById("botaoSair").textContent = data.user.username.slice(0, 2).toUpperCase();
@@ -242,6 +243,13 @@ document.addEventListener("click", async (event) => {
             await api(`/api/members/${memberId}`, { method: "DELETE" });
             await load();
             toast("Sócio excluído.");
+        }
+        if (target.dataset.action === "delete-user" && window.confirm("Excluir este usuário?")) {
+            await api(`/api/users/${target.dataset.id}`, { method: "DELETE" });
+            const users = await api("/api/users");
+            state.users = users.users;
+            renderUsers();
+            toast("Usuário excluído.");
         }
     } catch (error) {
         toast(error.message);
