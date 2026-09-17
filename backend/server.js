@@ -12,6 +12,11 @@ const host = process.env.HOST || "0.0.0.0";
 const jwtSecret = process.env.JWT_SECRET || "csspp-desenvolvimento-troque-esta-chave";
 const pastaBanco = process.env.DATABASE_DIR || path.join(__dirname, "..", "database");
 const databasePath = path.join(pastaBanco, "csspp.sqlite");
+const whatsappToken = process.env.WHATSAPP_TOKEN || "";
+const whatsappNumeroId = process.env.WHATSAPP_PHONE_NUMBER_ID || "";
+const whatsappModelo = process.env.WHATSAPP_TEMPLATE_NAME || "cobranca_mensalidade";
+const whatsappIdioma = process.env.WHATSAPP_TEMPLATE_LANGUAGE || "pt_BR";
+const horaCobranca = Number(process.env.COBRANCA_HORA || 8);
 const categorias = new Set(["civil", "militar", "diretoria", "ex-presidente", "funcionario"]);
 const mensalidades = { civil: 50, militar: 30, diretoria: 0, "ex-presidente": 0, funcionario: 0 };
 let database;
@@ -76,6 +81,65 @@ function validarSocio(body) {
   const category = validarTexto(body.category, "Categoria", 30);
   if (!categorias.has(category)) throw new Error("Categoria invalida.");
   return { fullName, displayName, document, phone, category };
+}
+
+function numeroWhatsApp(telefone) {
+  const digitos = String(telefone || "").replace(/\D/g, "");
+  return digitos.length >= 12 ? digitos : `55${digitos}`;
+}
+
+// O vencimento acontece no dia 1; sábado e domingo passam para a segunda-feira.
+function ehPrimeiroDiaUtil(data) {
+  const dia = data.getDate();
+  const semana = data.getDay();
+  if (dia === 1 && semana !== 0 && semana !== 6) return true;
+  if (dia === 2 && semana === 1) {
+    const primeiro = new Date(data.getFullYear(), data.getMonth(), 1);
+    return primeiro.getDay() === 0;
+  }
+  if (dia === 3 && semana === 1) {
+    const primeiro = new Date(data.getFullYear(), data.getMonth(), 1);
+    return primeiro.getDay() === 6;
+  }
+  return false;
+}
+
+function dataLocal() {
+  const agora = new Date();
+  const partes = new Intl.DateTimeFormat("en-CA", { timeZone: process.env.TZ || "America/Campo_Grande", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hour12: false }).formatToParts(agora);
+  const valor = Object.fromEntries(partes.map((parte) => [parte.type, parte.value]));
+  return new Date(Number(valor.year), Number(valor.month) - 1, Number(valor.day), Number(valor.hour));
+}
+
+function configurarCobranca() {
+  return Boolean(whatsappToken && whatsappNumeroId && whatsappModelo);
+}
+
+async function enviarWhatsApp(socio, mes, total) {
+  const resposta = await fetch(`https://graph.facebook.com/v22.0/${whatsappNumeroId}/messages`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${whatsappToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ messaging_product: "whatsapp", to: numeroWhatsApp(socio.phone), type: "template", template: { name: whatsappModelo, language: { code: whatsappIdioma }, components: [{ type: "body", parameters: [{ type: "text", text: socio.displayName }, { type: "text", text: `R$ ${total.toFixed(2).replace(".", ",")}` }, { type: "text", text: mes }] }] } })
+  });
+  if (!resposta.ok) throw new Error(`WhatsApp retornou HTTP ${resposta.status}.`);
+}
+
+// Envia uma única cobrança por competência e evita reenvios duplicados.
+async function processarCobrancasMensais() {
+  const agora = dataLocal();
+  if (!ehPrimeiroDiaUtil(agora) || agora.getHours() < horaCobranca) return;
+  if (!configurarCobranca()) return console.log("Cobranca automatica ignorada: configure as variaveis WHATSAPP_*.");
+  const mes = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, "0")}`;
+  const socios = consultarDadosFinanceiros(mes).filter((socio) => !socio.paid && socio.total > 0 && socio.phone && !buscarUm("SELECT id FROM notificacoes WHERE member_id = ? AND month = ?", [socio.id, mes]));
+  for (const socio of socios) {
+    try {
+      await enviarWhatsApp(socio, mes, socio.total);
+      executar("INSERT INTO notificacoes (member_id, month, sent_at, status) VALUES (?, ?, ?, ?)", [socio.id, mes, new Date().toISOString(), "enviado"]);
+      console.log(`Cobranca enviada para ${socio.displayName} (${mes}).`);
+    } catch (error) {
+      console.error(`Falha na cobranca de ${socio.displayName}: ${error.message}`);
+    }
+  }
 }
 
 // Exige um token válido nas rotas protegidas.
@@ -199,6 +263,7 @@ async function start() {
     CREATE TABLE IF NOT EXISTS members (id INTEGER PRIMARY KEY AUTOINCREMENT, full_name TEXT NOT NULL, display_name TEXT NOT NULL, document TEXT NOT NULL UNIQUE, phone TEXT NOT NULL, category TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS payments (id INTEGER PRIMARY KEY AUTOINCREMENT, member_id INTEGER NOT NULL, month TEXT NOT NULL, paid INTEGER NOT NULL DEFAULT 0, paid_at TEXT, UNIQUE(member_id, month), FOREIGN KEY(member_id) REFERENCES members(id) ON DELETE CASCADE);
     CREATE TABLE IF NOT EXISTS bar_entries (id INTEGER PRIMARY KEY AUTOINCREMENT, member_id INTEGER NOT NULL, month TEXT NOT NULL, amount_cents INTEGER NOT NULL DEFAULT 0, UNIQUE(member_id, month), FOREIGN KEY(member_id) REFERENCES members(id) ON DELETE CASCADE);
+    CREATE TABLE IF NOT EXISTS notificacoes (id INTEGER PRIMARY KEY AUTOINCREMENT, member_id INTEGER NOT NULL, month TEXT NOT NULL, sent_at TEXT NOT NULL, status TEXT NOT NULL, UNIQUE(member_id, month), FOREIGN KEY(member_id) REFERENCES members(id) ON DELETE CASCADE);
   `);
   if (!buscarUm("SELECT id FROM users LIMIT 1")) {
     const username = process.env.ADMIN_USER || "admin";
@@ -206,7 +271,11 @@ async function start() {
     executar("INSERT INTO users (username, password_hash) VALUES (?, ?)", [username, bcrypt.hashSync(password, 12)]);
     console.log(`Usuario inicial criado: ${username}. Altere a senha antes de usar em producao.`);
   } else persist();
-  app.listen(port, host, () => console.log(`CSSPP rodando em http://${host}:${port}`));
+  app.listen(port, host, () => {
+    console.log(`CSSPP rodando em http://${host}:${port}`);
+    setInterval(() => processarCobrancasMensais().catch((error) => console.error("Erro no agendador de cobrancas:", error.message)), 60 * 1000);
+    processarCobrancasMensais().catch((error) => console.error("Erro inicial no agendador de cobrancas:", error.message));
+  });
 }
 
 start().catch((error) => { console.error(error); process.exit(1); });
