@@ -7,10 +7,15 @@ const state = { members: [], users: [], pixKey: "" };
 if (!token) window.location.replace("login.html");
 
 async function api(url, options = {}) {
-    const response = await fetch(url, {
-        ...options,
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(options.headers || {}) }
-    });
+    let response;
+    try {
+        response = await fetch(url, {
+            ...options,
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(options.headers || {}) }
+        });
+    } catch {
+        throw new Error("Não foi possível conectar ao servidor. Abra o sistema por http://localhost:3000 e mantenha o backend ligado.");
+    }
     if (response.status === 401) {
         localStorage.removeItem("csspp-token");
         window.location.replace("login.html");
