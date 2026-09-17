@@ -257,14 +257,35 @@ document.addEventListener("click", async (event) => {
 });
 
 document.getElementById("exportarPlanilha").addEventListener("click", () => {
-    const header = ["Nome completo", "Nome para exibicao", "CPF ou matricula", "WhatsApp", "Categoria", "Mensalidade", "Bar no mes", "Total a cobrar", "Situacao"];
-    const rows = state.members.map((member) => [member.fullName, displayName(member), member.document, member.phone, typeNames[member.category], member.fee.toFixed(2).replace(".", ","), member.bar.toFixed(2).replace(".", ","), member.total.toFixed(2).replace(".", ","), member.total === 0 ? "Sem cobranca" : member.paid ? "Pago" : "Pendente"]);
-    const quote = (value) => `"${String(value).replace(/"/g, '""')}"`;
-    const csv = [header, ...rows].map((row) => row.map(quote).join(";")).join("\r\n");
-    const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
+    const ordemPatentes = [
+        ["coronel", "Cel"], ["cel ", "Cel"], ["tenente-coronel", "Ten-Cel"], ["ten cel", "Ten-Cel"], ["ten-cel", "Ten-Cel"], ["major", "Maj"], ["maj ", "Maj"], ["capitao", "Cap"], ["cap ", "Cap"],
+        ["1 tenente", "1º Ten"], ["1º ten", "1º Ten"], ["primeiro tenente", "1º Ten"], ["2 tenente", "2º Ten"], ["2º ten", "2º Ten"], ["segundo tenente", "2º Ten"],
+        ["aspirante", "Asp"], ["asp ", "Asp"], ["subtenente", "Subten"], ["st ", "Subten"], ["1 sargento", "1º Sgt"], ["1º sgt", "1º Sgt"], ["primeiro sargento", "1º Sgt"],
+        ["2 sargento", "2º Sgt"], ["2º sgt", "2º Sgt"], ["segundo sargento", "2º Sgt"], ["3 sargento", "3º Sgt"], ["3º sgt", "3º Sgt"], ["terceiro sargento", "3º Sgt"],
+        ["cabo", "Cb"], ["cb ", "Cb"], ["soldado", "Sd"], ["sd ", "Sd"]
+    ];
+    function classificarPosto(member) {
+        const nome = displayName(member).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const patente = ordemPatentes.find(([texto]) => nome.includes(texto));
+        if (patente) return { grupo: "Militares da ativa", posto: patente[1], ordem: ordemPatentes.indexOf(patente) };
+        if (nome.includes("reservista") || nome.includes("reserva")) return { grupo: "Reservistas", posto: "Reservista", ordem: 90 };
+        return { grupo: "Civis", posto: "Civil", ordem: 100 };
+    }
+    const linhas = [...state.members].sort((a, b) => {
+        const postoA = classificarPosto(a); const postoB = classificarPosto(b);
+        return postoA.ordem - postoB.ordem || displayName(a).localeCompare(displayName(b), "pt-BR");
+    }).map((member, indice) => {
+        const posto = classificarPosto(member);
+        return `<tr><td>${indice + 1}</td><td>${escapeHtml(posto.grupo)}</td><td>${escapeHtml(posto.posto)}</td><td>${escapeHtml(displayName(member))}</td><td>${escapeHtml(member.fullName)}</td><td>${escapeHtml(member.document)}</td><td>${escapeHtml(member.phone || "")}</td><td>${currency.format(member.fee)}</td><td>${currency.format(member.bar)}</td><td><strong>${currency.format(member.total)}</strong></td><td>${member.total === 0 ? "Sem cobrança" : member.paid ? "Pago" : "Pendente"}</td></tr>`;
+    }).join("");
+    const totalPendente = state.members.filter((member) => !member.paid).reduce((total, member) => total + member.total, 0);
+    const totalBar = state.members.reduce((total, member) => total + member.bar, 0);
+    const mesFormatado = new Date(`${month}-01T12:00:00`).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    const planilha = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Calibri,Arial;color:#24252a}h1{color:#9b111e;font-size:22px}h2{font-size:14px;color:#666}table{border-collapse:collapse;width:100%}th{background:#9b111e;color:white;padding:9px;border:1px solid #7c0d17}td{padding:7px;border:1px solid #ddd}tr:nth-child(even){background:#f8f8f8}.resumo{background:#f7e6e7;padding:10px;margin-bottom:14px}.pago{color:#168657;font-weight:bold}.pendente{color:#b57613;font-weight:bold}.grupo{font-weight:bold;color:#9b111e}</style></head><body><h1>CSSPP - Relatório de sócios</h1><h2>Competência: ${mesFormatado}</h2><div class="resumo"><b>Sócios:</b> ${state.members.length} &nbsp; | &nbsp; <b>A receber:</b> ${currency.format(totalPendente)} &nbsp; | &nbsp; <b>Total do bar:</b> ${currency.format(totalBar)}</div><table><thead><tr><th>Ordem</th><th>Grupo</th><th>Posto</th><th>Nome de exibição</th><th>Nome completo</th><th>CPF/Matrícula</th><th>WhatsApp</th><th>Mensalidade</th><th>Bar no mês</th><th>Total a cobrar</th><th>Situação</th></tr></thead><tbody>${linhas}</tbody></table></body></html>`;
+    const url = URL.createObjectURL(new Blob(["\uFEFF" + planilha], { type: "application/vnd.ms-excel;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = `socios-${month}.csv`;
+    link.download = `relatorio-socios-${month}.xls`;
     link.click();
     URL.revokeObjectURL(url);
     toast("Planilha exportada.");
