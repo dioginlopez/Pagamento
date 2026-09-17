@@ -2,7 +2,7 @@ const token = localStorage.getItem("csspp-token");
 let month = new Date().toISOString().slice(0, 7);
 const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const typeNames = { militar: "Militar", civil: "Civil", diretoria: "Diretoria", "ex-presidente": "Ex-presidente", funcionario: "Funcionário do clube" };
-const state = { members: [] };
+const state = { members: [], users: [], pixKey: "" };
 
 if (!token) window.location.replace("login.html");
 
@@ -36,8 +36,13 @@ function whatsappNumber(phone) {
 
 function whatsappLink(member) {
     if (!member.phone || member.paid || member.total === 0) return "";
-    const message = `Olá, ${displayName(member)}. Identificamos uma pendência de ${currency.format(member.total)} referente a ${month}. Mensalidade: ${currency.format(member.fee)}. Bar: ${currency.format(member.bar)}. Poderia verificar o pagamento?`;
+    const pix = state.pixKey ? ` Chave PIX: ${state.pixKey}.` : "";
+    const message = `🔔 *CSSPP - Lembrete de cobrança*\n\nOlá, ${displayName(member)}!\n\nIdentificamos uma pendência de *${currency.format(member.total)}* referente a *${month}*.\nMensalidade: ${currency.format(member.fee)}\nBar: ${currency.format(member.bar)}\n\n${pix}\nApós o pagamento, envie o comprovante. Obrigado!`;
     return `<a class="whatsapp-link" href="https://wa.me/${whatsappNumber(member.phone)}?text=${encodeURIComponent(message)}" target="_blank" rel="noopener">WhatsApp</a>`;
+}
+
+function renderUsers() {
+    document.getElementById("listaUsuarios").innerHTML = state.users.length ? `<div class="lista-usuarios">${state.users.map((user) => `<div class="usuario-item"><span class="usuario-inicial">${escapeHtml(user.username.charAt(0).toUpperCase())}</span><div><strong>${escapeHtml(user.username)}</strong><small>${escapeHtml(user.role === "admin" ? "Administrador" : "Usuário" )}</small></div></div>`).join("")}</div>` : '<p class="lista-vazia">Nenhum usuário encontrado.</p>';
 }
 
 function toast(message) {
@@ -105,6 +110,7 @@ async function load() {
     try {
         const data = await api(`/api/dashboard?month=${month}`);
         state.members = data.members;
+        state.pixKey = data.pixKey || "";
         const monthLabel = new Date(`${month}-01T12:00:00`).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
         document.getElementById("periodoAtual").textContent = `Acompanhe as cobranças e os totais do bar de ${monthLabel}.`;
         document.getElementById("mesBadge").textContent = monthLabel;
@@ -127,7 +133,12 @@ async function loadCurrentUser() {
     document.getElementById("usuarioAtual").textContent = data.user.username;
     document.getElementById("botaoSair").title = `Sair da conta de ${data.user.username}`;
     document.getElementById("botaoSair").textContent = data.user.username.slice(0, 2).toUpperCase();
-    if (data.user.role === "admin") document.getElementById("usuarios").hidden = false;
+    if (data.user.role === "admin") {
+        document.getElementById("usuarios").hidden = false;
+        const users = await api("/api/users");
+        state.users = users.users;
+        renderUsers();
+    }
 }
 
 document.getElementById("formSocio").addEventListener("submit", async (event) => {
@@ -217,6 +228,9 @@ document.getElementById("formUsuario").addEventListener("submit", async (event) 
             })
         });
         event.target.reset();
+        const users = await api("/api/users");
+        state.users = users.users;
+        renderUsers();
         feedback.textContent = "Usuário cadastrado com sucesso.";
         toast("Novo usuário criado.");
     } catch (error) {

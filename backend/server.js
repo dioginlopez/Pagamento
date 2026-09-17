@@ -16,6 +16,8 @@ const whatsappToken = process.env.WHATSAPP_TOKEN || "";
 const whatsappNumeroId = process.env.WHATSAPP_PHONE_NUMBER_ID || "";
 const whatsappModelo = process.env.WHATSAPP_TEMPLATE_NAME || "cobranca_mensalidade";
 const whatsappIdioma = process.env.WHATSAPP_TEMPLATE_LANGUAGE || "pt_BR";
+const chavePix = process.env.PIX_KEY || "";
+const segredoWebhookPix = process.env.PIX_WEBHOOK_SECRET || "";
 const horaCobranca = Number(process.env.COBRANCA_HORA || 8);
 const categorias = new Set(["civil", "militar", "diretoria", "ex-presidente", "funcionario"]);
 const mensalidades = { civil: 50, militar: 30, diretoria: 0, "ex-presidente": 0, funcionario: 0 };
@@ -191,10 +193,15 @@ app.get("/api/auth/me", autenticar, (req, res) => {
 app.get("/api/dashboard", autenticar, (req, res) => {
   try {
     const month = obterMes(req.query.month);
-    res.json({ month, members: consultarDadosFinanceiros(month) });
+    res.json({ month, members: consultarDadosFinanceiros(month), pixKey: chavePix });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
+});
+
+app.get("/api/users", autenticar, (req, res) => {
+  if (req.user.role !== "admin") return res.status(403).json({ error: "Apenas administradores podem consultar usuarios." });
+  res.json({ users: buscarTodos("SELECT username, role, created_at AS createdAt FROM users ORDER BY username COLLATE NOCASE") });
 });
 
 app.post("/api/members", autenticar, (req, res) => {
@@ -250,6 +257,24 @@ app.post("/api/users", autenticar, (req, res) => {
     res.status(201).json({ id: result.lastInsertRowid, username });
   } catch (error) {
     res.status(400).json({ error: error.message.includes("UNIQUE") ? "Usuario ja cadastrado." : error.message });
+  }
+});
+
+// Recebe a confirmação do provedor PIX e só baixa a cobrança com valor compatível.
+app.post("/api/webhooks/pix", (req, res) => {
+  try {
+    if (!segredoWebhookPix || req.headers["x-webhook-secret"] !== segredoWebhookPix) return res.status(401).json({ error: "Webhook nao autorizado." });
+    const { status, document, month, amount } = req.body;
+    if (status !== "CONFIRMED" || typeof document !== "string" || typeof month !== "string" || !Number.isFinite(Number(amount))) throw new Error("Confirmacao PIX invalida.");
+    const socio = buscarUm("SELECT id FROM members WHERE document = ?", [document.trim()]);
+    if (!socio) return res.status(404).json({ error: "Socio nao encontrado." });
+    const cobranca = consultarDadosFinanceiros(obterMes(month)).find((item) => Number(item.id) === Number(socio.id));
+    if (!cobranca || Math.round(Number(amount) * 100) !== Math.round(cobranca.total * 100)) return res.status(409).json({ error: "Valor do PIX nao corresponde ao total da cobranca." });
+    executar(`INSERT INTO payments (member_id, month, paid, paid_at) VALUES (?, ?, 1, ?)
+      ON CONFLICT(member_id, month) DO UPDATE SET paid = 1, paid_at = excluded.paid_at`, [socio.id, obterMes(month), new Date().toISOString()]);
+    res.json({ ok: true, paid: true });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 
