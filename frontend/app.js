@@ -57,6 +57,20 @@ function toast(message) {
     window.setTimeout(() => element.classList.remove("visible"), 2600);
 }
 
+function applyScreen() {
+    const screen = window.location.hash.slice(1) || "inicio";
+    const validScreens = ["inicio", "socios", "bar", "editarSocios", "usuarios"];
+    const activeScreen = validScreens.includes(screen) ? screen : "inicio";
+    document.querySelectorAll(".screen-view").forEach((view) => {
+        view.classList.toggle("screen-active", view.dataset.screen === activeScreen);
+    });
+    const workspace = document.querySelector(".workspace-grid");
+    workspace.classList.toggle("screen-empty", !["socios", "bar"].includes(activeScreen));
+    document.querySelectorAll(".nav-link").forEach((link) => {
+        link.classList.toggle("active", link.getAttribute("href") === `#${activeScreen}`);
+    });
+}
+
 function updateSummary() {
     const pendingTotal = state.members.filter((member) => !member.paid).reduce((sum, member) => sum + member.total, 0);
     const barTotal = state.members.reduce((sum, member) => sum + member.bar, 0);
@@ -96,13 +110,26 @@ function preencherEdicao() {
 
 function renderMembers() {
     const list = document.getElementById("listaSocios");
+    const resultCounter = document.getElementById("resultadoSocios");
     const search = document.getElementById("buscaSocio").value.toLowerCase().trim();
-    const filter = document.getElementById("filtroPagamento").value;
-    const members = state.members.filter((member) => {
+    const paymentFilter = document.getElementById("filtroPagamento").value;
+    const categoryFilter = document.getElementById("filtroCategoria").value;
+    const orderBy = document.getElementById("ordemSocios").value;
+
+    const members = [...state.members].filter((member) => {
         const matchesSearch = [displayName(member), member.fullName, member.document].some((value) => value.toLowerCase().includes(search));
-        const matchesFilter = filter === "todos" || (filter === "pagos" && member.paid) || (filter === "pendentes" && !member.paid);
-        return matchesSearch && matchesFilter;
+        const matchesPayment = paymentFilter === "todos" || (paymentFilter === "pagos" && member.paid) || (paymentFilter === "pendentes" && !member.paid);
+        const matchesCategory = categoryFilter === "todos" || member.category === categoryFilter;
+        return matchesSearch && matchesPayment && matchesCategory;
+    }).sort((a, b) => {
+        if (orderBy === "pendentes") return Number(a.paid) - Number(b.paid) || displayName(a).localeCompare(displayName(b), "pt-BR");
+        if (orderBy === "valor") return b.total - a.total || displayName(a).localeCompare(displayName(b), "pt-BR");
+        if (orderBy === "categoria") return typeNames[a.category].localeCompare(typeNames[b.category], "pt-BR") || displayName(a).localeCompare(displayName(b), "pt-BR");
+        return displayName(a).localeCompare(displayName(b), "pt-BR");
     });
+
+    resultCounter.textContent = `${members.length} sócio${members.length === 1 ? "" : "s"} encontrado${members.length === 1 ? "" : "s"}`;
+
     if (!members.length) {
         list.innerHTML = '<tr class="empty-row"><td colspan="7">Nenhum sócio encontrado.</td></tr>';
         return;
@@ -117,7 +144,7 @@ function renderMembers() {
             <td><span class="category ${escapeHtml(member.category)}">${escapeHtml(typeNames[member.category])}</span></td>
             <td>${currency.format(member.fee)}</td><td>${currency.format(member.bar)}</td><td><strong>${currency.format(member.total)}</strong></td>
             <td><button class="status-button ${noCharge ? "exempt" : member.paid ? "paid" : "pending"}" ${statusAction}>${status}</button></td>
-            <td><div class="action-cell">${whatsappLink(member)}<button class="delete-button" type="button" title="Excluir sócio" data-action="delete-member" data-id="${member.id}">×</button></div></td>
+            <td><div class="action-cell">${whatsappLink(member)}<button class="edit-button" type="button" title="Editar sócio" data-action="edit-member" data-id="${member.id}">Editar</button><button class="delete-button" type="button" title="Excluir sócio" data-action="delete-member" data-id="${member.id}">×</button></div></td>
         </tr>`;
     }).join("");
 }
@@ -151,6 +178,9 @@ document.getElementById("mesSelecionado").addEventListener("change", async (even
     await load();
 });
 
+window.addEventListener("hashchange", applyScreen);
+applyScreen();
+
 async function loadCurrentUser() {
     const data = await api("/api/auth/me");
     state.currentUser = data.user.username;
@@ -159,6 +189,7 @@ async function loadCurrentUser() {
     document.getElementById("botaoSair").textContent = data.user.username.slice(0, 2).toUpperCase();
     if (data.user.role === "admin") {
         document.getElementById("usuarios").hidden = false;
+        document.getElementById("navUsuarios").hidden = false;
         const users = await api("/api/users");
         state.users = users.users;
         renderUsers();
@@ -198,6 +229,19 @@ document.getElementById("formBar").addEventListener("submit", async (event) => {
 document.getElementById("socioBar").addEventListener("change", renderBarSelect);
 document.getElementById("buscaSocio").addEventListener("input", renderMembers);
 document.getElementById("filtroPagamento").addEventListener("change", renderMembers);
+document.getElementById("filtroCategoria").addEventListener("change", renderMembers);
+document.getElementById("ordemSocios").addEventListener("change", renderMembers);
+document.getElementById("limparBusca").addEventListener("click", () => {
+    document.getElementById("buscaSocio").value = "";
+    renderMembers();
+});
+document.getElementById("resetarFiltros").addEventListener("click", () => {
+    document.getElementById("buscaSocio").value = "";
+    document.getElementById("filtroPagamento").value = "todos";
+    document.getElementById("filtroCategoria").value = "todos";
+    document.getElementById("ordemSocios").value = "nome";
+    renderMembers();
+});
 
 document.getElementById("socioEditar").addEventListener("change", preencherEdicao);
 
@@ -205,7 +249,13 @@ document.getElementById("formEditarSocio").addEventListener("submit", async (eve
     event.preventDefault();
     const memberId = document.getElementById("socioEditar").value;
     const feedback = document.getElementById("feedbackEdicao");
+    feedback.style.color = "#168657";
     try {
+        if (!memberId) {
+            feedback.textContent = "Selecione um sócio antes de salvar.";
+            feedback.style.color = "#b00000";
+            return;
+        }
         await api(`/api/members/${memberId}`, { method: "PUT", body: JSON.stringify({
             fullName: document.getElementById("editarNomeCompleto").value,
             displayName: document.getElementById("editarNomeExibicao").value,
@@ -239,6 +289,15 @@ document.addEventListener("click", async (event) => {
             await load();
             toast(member.paid ? "Pagamento voltou para pendente." : "Pagamento confirmado.");
         }
+        if (target.dataset.action === "edit-member") {
+            const select = document.getElementById("socioEditar");
+            const member = state.members.find((item) => String(item.id) === memberId);
+            if (!member) return;
+            select.value = String(member.id);
+            preencherEdicao();
+            document.getElementById("editarSocios").scrollIntoView({ behavior: "smooth", block: "start" });
+            toast("Editando sócio selecionado.");
+        }
         if (target.dataset.action === "delete-member" && window.confirm("Excluir este sócio e seus lançamentos?")) {
             await api(`/api/members/${memberId}`, { method: "DELETE" });
             await load();
@@ -257,38 +316,33 @@ document.addEventListener("click", async (event) => {
 });
 
 document.getElementById("exportarPlanilha").addEventListener("click", () => {
-    const ordemPatentes = [
-        ["coronel", "Cel"], ["cel ", "Cel"], ["tenente-coronel", "Ten-Cel"], ["ten cel", "Ten-Cel"], ["ten-cel", "Ten-Cel"], ["major", "Maj"], ["maj ", "Maj"], ["capitao", "Cap"], ["cap ", "Cap"],
-        ["1 tenente", "1º Ten"], ["1º ten", "1º Ten"], ["primeiro tenente", "1º Ten"], ["2 tenente", "2º Ten"], ["2º ten", "2º Ten"], ["segundo tenente", "2º Ten"],
-        ["aspirante", "Asp"], ["asp ", "Asp"], ["subtenente", "Subten"], ["st ", "Subten"], ["1 sargento", "1º Sgt"], ["1º sgt", "1º Sgt"], ["primeiro sargento", "1º Sgt"],
-        ["2 sargento", "2º Sgt"], ["2º sgt", "2º Sgt"], ["segundo sargento", "2º Sgt"], ["3 sargento", "3º Sgt"], ["3º sgt", "3º Sgt"], ["terceiro sargento", "3º Sgt"],
-        ["cabo", "Cb"], ["cb ", "Cb"], ["soldado", "Sd"], ["sd ", "Sd"]
-    ];
-    function classificarPosto(member) {
-        const nome = displayName(member).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const patente = ordemPatentes.find(([texto]) => nome.includes(texto));
-        if (patente) return { grupo: "Militares da ativa", posto: patente[1], ordem: ordemPatentes.indexOf(patente) };
-        if (nome.includes("reservista") || nome.includes("reserva")) return { grupo: "Reservistas", posto: "Reservista", ordem: 90 };
-        return { grupo: "Civis", posto: "Civil", ordem: 100 };
+    if (!state.members.length) {
+        toast("Nenhum sócio para exportar.");
+        return;
     }
-    const linhas = [...state.members].sort((a, b) => {
-        const postoA = classificarPosto(a); const postoB = classificarPosto(b);
-        return postoA.ordem - postoB.ordem || displayName(a).localeCompare(displayName(b), "pt-BR");
-    }).map((member, indice) => {
-        const posto = classificarPosto(member);
-        return `<tr><td>${indice + 1}</td><td>${escapeHtml(posto.grupo)}</td><td>${escapeHtml(posto.posto)}</td><td>${escapeHtml(displayName(member))}</td><td>${escapeHtml(member.fullName)}</td><td>${escapeHtml(member.document)}</td><td>${escapeHtml(member.phone || "")}</td><td>${currency.format(member.fee)}</td><td>${currency.format(member.bar)}</td><td><strong>${currency.format(member.total)}</strong></td><td>${member.total === 0 ? "Sem cobrança" : member.paid ? "Pago" : "Pendente"}</td></tr>`;
-    }).join("");
-    const totalPendente = state.members.filter((member) => !member.paid).reduce((total, member) => total + member.total, 0);
-    const totalBar = state.members.reduce((total, member) => total + member.bar, 0);
-    const mesFormatado = new Date(`${month}-01T12:00:00`).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-    const planilha = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Calibri,Arial;color:#24252a}h1{color:#9b111e;font-size:22px}h2{font-size:14px;color:#666}table{border-collapse:collapse;width:100%}th{background:#9b111e;color:white;padding:9px;border:1px solid #7c0d17}td{padding:7px;border:1px solid #ddd}tr:nth-child(even){background:#f8f8f8}.resumo{background:#f7e6e7;padding:10px;margin-bottom:14px}.pago{color:#168657;font-weight:bold}.pendente{color:#b57613;font-weight:bold}.grupo{font-weight:bold;color:#9b111e}</style></head><body><h1>CSSPP - Relatório de sócios</h1><h2>Competência: ${mesFormatado}</h2><div class="resumo"><b>Sócios:</b> ${state.members.length} &nbsp; | &nbsp; <b>A receber:</b> ${currency.format(totalPendente)} &nbsp; | &nbsp; <b>Total do bar:</b> ${currency.format(totalBar)}</div><table><thead><tr><th>Ordem</th><th>Grupo</th><th>Posto</th><th>Nome de exibição</th><th>Nome completo</th><th>CPF/Matrícula</th><th>WhatsApp</th><th>Mensalidade</th><th>Bar no mês</th><th>Total a cobrar</th><th>Situação</th></tr></thead><tbody>${linhas}</tbody></table></body></html>`;
-    const url = URL.createObjectURL(new Blob(["\uFEFF" + planilha], { type: "application/vnd.ms-excel;charset=utf-8" }));
+    const linhas = [...state.members].sort((a, b) => displayName(a).localeCompare(displayName(b), "pt-BR")).map((member) => {
+        const status = member.total === 0 ? "Sem cobrança" : member.paid ? "Pago" : "Pendente";
+        return [
+            displayName(member),
+            member.fullName,
+            member.document,
+            member.phone || "",
+            typeNames[member.category],
+            member.fee.toFixed(2).replace(".", ","),
+            member.bar.toFixed(2).replace(".", ","),
+            member.total.toFixed(2).replace(".", ","),
+            status
+        ];
+    });
+    const cabecalho = ["Nome de exibição", "Nome completo", "CPF/Matrícula", "WhatsApp", "Categoria", "Mensalidade", "Bar no mês", "Total a cobrar", "Situação"];
+    const csv = [cabecalho, ...linhas].map((linha) => linha.map((valor) => `"${String(valor).replace(/"/g, '""')}"`).join(";")).join("\r\n");
+    const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = `relatorio-socios-${month}.xls`;
+    link.download = `relatorio-socios-${month}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    toast("Planilha exportada.");
+    toast("Planilha exportada em CSV.");
 });
 
 document.getElementById("formUsuario").addEventListener("submit", async (event) => {

@@ -21,6 +21,7 @@
 				<a class="nav-link" href="#socios"><span class="nav-icon">♙</span>Sócios</a>
 				<a class="nav-link" href="#bar"><span class="nav-icon">▣</span>Total do bar</a>
 				<a class="nav-link" href="#editarSocios"><span class="nav-icon">✎</span>Editar sócios</a>
+				<a class="nav-link" id="navUsuarios" href="#usuarios" hidden><span class="nav-icon">♙</span>Usuários</a>
 			</nav>
 
 			<div class="sidebar-footer">
@@ -47,7 +48,7 @@
 			</header>
 
 			<!-- Indicadores resumidos da competência selecionada. -->
-			<section class="grade-resumo" aria-label="Resumo do mês">
+			<section class="grade-resumo screen-view" data-screen="inicio" aria-label="Resumo do mês">
 				<article class="cartao-resumo destaque-vermelho">
 					<div class="icone-resumo">R$</div>
 					<div><span class="rotulo-resumo">A receber</span><strong id="totalReceber">R$ 0,00</strong><small>valores pendentes</small></div>
@@ -67,7 +68,7 @@
 			</section>
 
 			<section class="workspace-grid">
-				<article class="panel" id="socios">
+				<article class="panel screen-view" id="socios" data-screen="socios">
 					<div class="panel-heading">
 						<div><p class="eyebrow">Novo cadastro</p><h2>Cadastrar sócio</h2></div>
 						<span class="panel-mark">+</span>
@@ -104,7 +105,7 @@
 					<div class="fee-note"><span>Mensalidade automática</span><strong>Militar R$ 30,00 · Civil R$ 50,00 · Isentos pagam só o bar</strong></div>
 				</article>
 
-				<article class="panel" id="bar">
+				<article class="panel screen-view" id="bar" data-screen="bar">
 					<div class="panel-heading">
 						<div><p class="eyebrow">Fechamento mensal</p><h2>Valor total do bar</h2></div>
 						<span class="panel-mark gold">R$</span>
@@ -124,10 +125,19 @@
 				</article>
 			</section>
 
-			<section class="panel table-panel" aria-labelledby="tituloPagamentos">
+			<section class="panel table-panel screen-view" data-screen="socios" aria-labelledby="tituloPagamentos">
 				<div class="panel-heading table-heading">
 					<div><p class="eyebrow">Acompanhamento</p><h2 id="tituloPagamentos">Status das mensalidades</h2></div>
-					<div class="table-tools"><label class="search-box"><span>⌕</span><input id="buscaSocio" type="search" placeholder="Buscar sócio"></label><select id="filtroPagamento" aria-label="Filtrar pagamentos"><option value="todos">Todos</option><option value="pendentes">Pendentes</option><option value="pagos">Pagos</option></select><button class="outline-button" id="exportarPlanilha" type="button">Exportar planilha</button></div>
+					<div class="table-tools">
+						<label class="search-box"><span>⌕</span><input id="buscaSocio" type="search" placeholder="Buscar sócio"></label>
+						<button class="clear-button" id="limparBusca" type="button" title="Limpar busca">Limpar</button>
+						<select id="filtroPagamento" aria-label="Filtrar pagamentos"><option value="todos">Todos</option><option value="pendentes">Pendentes</option><option value="pagos">Pagos</option></select>
+						<select id="filtroCategoria" aria-label="Filtrar categoria"><option value="todos">Todas as categorias</option><option value="civil">Civil</option><option value="militar">Militar</option><option value="diretoria">Diretoria</option><option value="ex-presidente">Ex-presidente</option><option value="funcionario">Funcionário</option></select>
+						<select id="ordemSocios" aria-label="Ordenar sócios"><option value="nome">Ordenar: nome</option><option value="pendentes">Ordenar: pendentes</option><option value="valor">Ordenar: valor</option><option value="categoria">Ordenar: categoria</option></select>
+						<button class="clear-button" id="resetarFiltros" type="button">Resetar filtros</button>
+						<button class="outline-button" id="exportarPlanilha" type="button">Exportar planilha</button>
+					</div>
+					<div class="lista-resultado" id="resultadoSocios">0 sócios</div>
 				</div>
 				<div class="table-scroll">
 					<table>
@@ -138,7 +148,7 @@
 			</section>
 
 			<!-- Aba exclusiva para alterar os dados cadastrais dos sócios. -->
-			<section class="panel editar-panel" id="editarSocios" aria-labelledby="tituloEditarSocios">
+			<section class="panel editar-panel screen-view" id="editarSocios" data-screen="editarSocios" aria-labelledby="tituloEditarSocios">
 				<div class="panel-heading"><div><p class="eyebrow">Cadastro</p><h2 id="tituloEditarSocios">Editar sócio</h2></div><span class="panel-mark">✎</span></div>
 				<form id="formEditarSocio" class="form-grid">
 					<div class="field full-width"><label for="socioEditar">Sócio</label><select id="socioEditar" required><option value="">Selecione um sócio</option></select></div>
@@ -152,7 +162,7 @@
 				<p class="form-feedback" id="feedbackEdicao" role="status"></p>
 			</section>
 
-			<section class="panel user-panel" id="usuarios" hidden aria-labelledby="tituloUsuarios">
+			<section class="panel user-panel screen-view" id="usuarios" data-screen="usuarios" hidden aria-labelledby="tituloUsuarios">
 				<div class="panel-heading">
 					<div><p class="eyebrow">Administração</p><h2 id="tituloUsuarios">Cadastrar usuário</h2></div>
 					<span class="panel-mark">+</span>
