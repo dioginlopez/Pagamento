@@ -168,17 +168,19 @@ function autenticar(req, res, next) {
 function consultarDadosFinanceiros(month) {
   return buscarTodos(`
     SELECT m.id, m.full_name AS fullName, m.display_name AS displayName, m.document, m.phone, m.category,
-      COALESCE(p.paid, 0) AS paid, COALESCE(b.amount_cents, 0) AS barCents
+      COALESCE(p.paid, 0) AS paid, COALESCE(b.amount_cents, 0) AS barCents, COALESCE(c.amount_cents, 0) AS carneCents
     FROM members m
     LEFT JOIN payments p ON p.member_id = m.id AND p.month = ?
     LEFT JOIN bar_entries b ON b.member_id = m.id AND b.month = ?
+    LEFT JOIN carne_entries c ON c.member_id = m.id AND c.month = ?
     ORDER BY m.display_name COLLATE NOCASE
-  `, [month, month]).map((member) => ({
+  `, [month, month, month]).map((member) => ({
     ...member,
     paid: Boolean(Number(member.paid)),
     fee: mensalidades[member.category],
     bar: Number(member.barCents) / 100,
-    total: mensalidades[member.category] + Number(member.barCents) / 100
+    carne: Number(member.carneCents) / 100,
+    total: mensalidades[member.category] + Number(member.barCents) / 100 + Number(member.carneCents) / 100
   }));
 }
 
@@ -263,6 +265,21 @@ app.put("/api/members/:id/bar", autenticar, (req, res) => {
   }
 });
 
+// Venda de carne e um lancamento avulso: so e cobrado nos meses em que houver venda para o socio.
+app.put("/api/members/:id/carne", autenticar, (req, res) => {
+  try {
+    const memberId = Number(req.params.id);
+    const month = obterMes(req.body.month);
+    const amount = Number(req.body.amount);
+    if (!Number.isInteger(memberId) || !Number.isFinite(amount) || amount < 0 || amount > 1000000) throw new Error("Valor do carne invalido.");
+    executar(`INSERT INTO carne_entries (member_id, month, amount_cents) VALUES (?, ?, ?)
+      ON CONFLICT(member_id, month) DO UPDATE SET amount_cents = excluded.amount_cents`, [memberId, month, Math.round(amount * 100)]);
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 app.delete("/api/members/:id", autenticar, (req, res) => {
   const result = executar("DELETE FROM members WHERE id = ?", [Number(req.params.id)]);
   if (!result.changes) return res.status(404).json({ error: "Socio nao encontrado." });
@@ -326,6 +343,7 @@ async function start() {
     CREATE TABLE IF NOT EXISTS members (id INTEGER PRIMARY KEY AUTOINCREMENT, full_name TEXT NOT NULL, display_name TEXT NOT NULL, document TEXT NOT NULL UNIQUE, phone TEXT NOT NULL, category TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS payments (id INTEGER PRIMARY KEY AUTOINCREMENT, member_id INTEGER NOT NULL, month TEXT NOT NULL, paid INTEGER NOT NULL DEFAULT 0, paid_at TEXT, UNIQUE(member_id, month), FOREIGN KEY(member_id) REFERENCES members(id) ON DELETE CASCADE);
     CREATE TABLE IF NOT EXISTS bar_entries (id INTEGER PRIMARY KEY AUTOINCREMENT, member_id INTEGER NOT NULL, month TEXT NOT NULL, amount_cents INTEGER NOT NULL DEFAULT 0, UNIQUE(member_id, month), FOREIGN KEY(member_id) REFERENCES members(id) ON DELETE CASCADE);
+    CREATE TABLE IF NOT EXISTS carne_entries (id INTEGER PRIMARY KEY AUTOINCREMENT, member_id INTEGER NOT NULL, month TEXT NOT NULL, amount_cents INTEGER NOT NULL DEFAULT 0, UNIQUE(member_id, month), FOREIGN KEY(member_id) REFERENCES members(id) ON DELETE CASCADE);
     CREATE TABLE IF NOT EXISTS notificacoes (id INTEGER PRIMARY KEY AUTOINCREMENT, member_id INTEGER NOT NULL, month TEXT NOT NULL, sent_at TEXT NOT NULL, status TEXT NOT NULL, UNIQUE(member_id, month), FOREIGN KEY(member_id) REFERENCES members(id) ON DELETE CASCADE);
   `);
   if (!buscarUm("SELECT id FROM users LIMIT 1")) {

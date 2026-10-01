@@ -42,7 +42,8 @@ function whatsappNumber(phone) {
 function whatsappLink(member) {
     if (!member.phone || member.paid || member.total === 0) return "";
     const pix = state.pixKey ? `💳 *PAGUE VIA PIX*\nChave PIX: *${state.pixKey}*` : "💳 Chave PIX ainda não configurada pelo clube.";
-    const message = `🔔 *CSSPP - Lembrete de cobrança*\n\nOlá, ${displayName(member)}!\n\nIdentificamos uma pendência de *${currency.format(member.total)}* referente a *${month}*.\nMensalidade: ${currency.format(member.fee)}\nBar: ${currency.format(member.bar)}\n\n${pix}\n\nApós o pagamento, envie o comprovante. Obrigado!`;
+    const carneLine = member.carne > 0 ? `\nCarne: ${currency.format(member.carne)}` : "";
+    const message = `🔔 *CSSPP - Lembrete de cobrança*\n\nOlá, ${displayName(member)}!\n\nIdentificamos uma pendência de *${currency.format(member.total)}* referente a *${month}*.\nMensalidade: ${currency.format(member.fee)}\nBar: ${currency.format(member.bar)}${carneLine}\n\n${pix}\n\nApós o pagamento, envie o comprovante. Obrigado!`;
     return `<a class="whatsapp-link" href="https://wa.me/${whatsappNumber(member.phone)}?text=${encodeURIComponent(message)}" target="_blank" rel="noopener">WhatsApp</a>`;
 }
 
@@ -59,13 +60,13 @@ function toast(message) {
 
 function applyScreen() {
     const screen = window.location.hash.slice(1) || "inicio";
-    const validScreens = ["inicio", "socios", "bar", "editarSocios", "usuarios"];
+    const validScreens = ["inicio", "socios", "bar", "carne", "editarSocios", "usuarios"];
     const activeScreen = validScreens.includes(screen) ? screen : "inicio";
     document.querySelectorAll(".screen-view").forEach((view) => {
         view.classList.toggle("screen-active", view.dataset.screen === activeScreen);
     });
     const workspace = document.querySelector(".workspace-grid");
-    workspace.classList.toggle("screen-empty", !["socios", "bar"].includes(activeScreen));
+    workspace.classList.toggle("screen-empty", !["socios", "bar", "carne"].includes(activeScreen));
     document.querySelectorAll(".nav-link").forEach((link) => {
         link.classList.toggle("active", link.getAttribute("href") === `#${activeScreen}`);
     });
@@ -89,6 +90,14 @@ function renderBarSelect() {
     select.innerHTML = '<option value="">Selecione um sócio</option>' + state.members.map((member) => `<option value="${member.id}">${escapeHtml(displayName(member))}</option>`).join("");
     select.value = current;
     document.getElementById("valorBarMes").value = select.value ? state.members.find((member) => String(member.id) === select.value)?.bar || "" : "";
+}
+
+function renderCarneSelect() {
+    const select = document.getElementById("socioCarne");
+    const current = select.value;
+    select.innerHTML = '<option value="">Selecione um sócio</option>' + state.members.map((member) => `<option value="${member.id}">${escapeHtml(displayName(member))}</option>`).join("");
+    select.value = current;
+    document.getElementById("valorCarneMes").value = select.value ? state.members.find((member) => String(member.id) === select.value)?.carne || "" : "";
 }
 
 function renderEditSelect() {
@@ -131,7 +140,7 @@ function renderMembers() {
     resultCounter.textContent = `${members.length} sócio${members.length === 1 ? "" : "s"} encontrado${members.length === 1 ? "" : "s"}`;
 
     if (!members.length) {
-        list.innerHTML = '<tr class="empty-row"><td colspan="7">Nenhum sócio encontrado.</td></tr>';
+        list.innerHTML = '<tr class="empty-row"><td colspan="8">Nenhum sócio encontrado.</td></tr>';
         return;
     }
     list.innerHTML = members.map((member) => {
@@ -142,7 +151,7 @@ function renderMembers() {
         return `<tr>
             <td><div class="member-cell"><span class="member-avatar">${escapeHtml(name.charAt(0).toUpperCase())}</span><div><strong>${escapeHtml(name)}</strong><small>${escapeHtml(member.fullName)} · ${escapeHtml(member.document)}</small></div></div></td>
             <td><span class="category ${escapeHtml(member.category)}">${escapeHtml(typeNames[member.category])}</span></td>
-            <td>${currency.format(member.fee)}</td><td>${currency.format(member.bar)}</td><td><strong>${currency.format(member.total)}</strong></td>
+            <td>${currency.format(member.fee)}</td><td>${currency.format(member.bar)}</td><td>${currency.format(member.carne)}</td><td><strong>${currency.format(member.total)}</strong></td>
             <td><button class="status-button ${noCharge ? "exempt" : member.paid ? "paid" : "pending"}" ${statusAction}>${status}</button></td>
             <td><div class="action-cell">${whatsappLink(member)}<button class="edit-button" type="button" title="Editar sócio" data-action="edit-member" data-id="${member.id}">Editar</button><button class="delete-button" type="button" title="Excluir sócio" data-action="delete-member" data-id="${member.id}">×</button></div></td>
         </tr>`;
@@ -152,6 +161,7 @@ function renderMembers() {
 function render() {
     updateSummary();
     renderBarSelect();
+    renderCarneSelect();
     renderEditSelect();
     renderMembers();
 }
@@ -165,6 +175,7 @@ async function load() {
         document.getElementById("periodoAtual").textContent = `Acompanhe as cobranças e os totais do bar de ${monthLabel}.`;
         document.getElementById("mesBadge").textContent = monthLabel;
         document.getElementById("mesBarLabel").textContent = monthLabel;
+        document.getElementById("mesCarneLabel").textContent = monthLabel;
         render();
     } catch (error) {
         toast(error.message);
@@ -226,7 +237,20 @@ document.getElementById("formBar").addEventListener("submit", async (event) => {
     }
 });
 
+document.getElementById("formCarne").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const memberId = document.getElementById("socioCarne").value;
+    try {
+        await api(`/api/members/${memberId}/carne`, { method: "PUT", body: JSON.stringify({ month, amount: Number(document.getElementById("valorCarneMes").value) }) });
+        await load();
+        toast("Venda de carne salva no banco.");
+    } catch (error) {
+        toast(error.message);
+    }
+});
+
 document.getElementById("socioBar").addEventListener("change", renderBarSelect);
+document.getElementById("socioCarne").addEventListener("change", renderCarneSelect);
 document.getElementById("buscaSocio").addEventListener("input", renderMembers);
 document.getElementById("filtroPagamento").addEventListener("change", renderMembers);
 document.getElementById("filtroCategoria").addEventListener("change", renderMembers);
@@ -330,11 +354,12 @@ document.getElementById("exportarPlanilha").addEventListener("click", () => {
             typeNames[member.category],
             member.fee.toFixed(2).replace(".", ","),
             member.bar.toFixed(2).replace(".", ","),
+            member.carne.toFixed(2).replace(".", ","),
             member.total.toFixed(2).replace(".", ","),
             status
         ];
     });
-    const cabecalho = ["Nome de exibição", "Nome completo", "CPF/Matrícula", "WhatsApp", "Categoria", "Mensalidade", "Bar no mês", "Total a cobrar", "Situação"];
+    const cabecalho = ["Nome de exibição", "Nome completo", "CPF/Matrícula", "WhatsApp", "Categoria", "Mensalidade", "Bar no mês", "Venda de carne", "Total a cobrar", "Situação"];
     const csv = [cabecalho, ...linhas].map((linha) => linha.map((valor) => `"${String(valor).replace(/"/g, '""')}"`).join(";")).join("\r\n");
     const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");

@@ -20,6 +20,7 @@
 				<a class="nav-link active" href="#inicio"><span class="nav-icon">⌂</span>Visão geral</a>
 				<a class="nav-link" href="#socios"><span class="nav-icon">♙</span>Sócios</a>
 				<a class="nav-link" href="#bar"><span class="nav-icon">▣</span>Total do bar</a>
+				<a class="nav-link" href="#carne"><span class="nav-icon">❖</span>Venda de carne</a>
 				<a class="nav-link" href="#editarSocios"><span class="nav-icon">✎</span>Editar sócios</a>
 				<a class="nav-link" id="navUsuarios" href="#usuarios" hidden><span class="nav-icon">♙</span>Usuários</a>
 			</nav>
@@ -123,7 +124,24 @@
 					</form>
 					<p class="form-feedback" id="feedbackBar" role="status">Informe o total consumido pelo sócio no mês.</p>
 				</article>
-			</section>
+				<article class="panel screen-view" id="carne" data-screen="carne">
+					<div class="panel-heading">
+						<div><p class="eyebrow">Lançamento avulso</p><h2>Venda de carne</h2></div>
+						<span class="panel-mark gold">❖</span>
+					</div>
+					<form id="formCarne" class="form-grid">
+						<div class="field full-width">
+							<label for="socioCarne">Sócio</label>
+							<select id="socioCarne" required><option value="">Selecione um sócio</option></select>
+						</div>
+						<div class="field full-width">
+							<label for="valorCarneMes">Valor da venda de carne em <span id="mesCarneLabel"></span></label>
+							<input id="valorCarneMes" type="number" min="0" step="0.01" placeholder="0,00" required>
+						</div>
+						<button class="secondary-button full-width" type="submit">Salvar venda do sócio</button>
+					</form>
+					<p class="form-feedback" id="feedbackCarne" role="status">Só preencha nos meses em que houver venda de carne para o sócio. Deixe 0 para os demais meses.</p>
+				</article>			</section>
 
 			<section class="panel table-panel screen-view" data-screen="socios" aria-labelledby="tituloPagamentos">
 				<div class="panel-heading table-heading">
@@ -141,8 +159,8 @@
 				</div>
 				<div class="table-scroll">
 					<table>
-						<thead><tr><th>Sócio</th><th>Categoria</th><th>Mensalidade</th><th>Bar no mês</th><th>Total a cobrar</th><th>Status</th><th>Ações</th></tr></thead>
-						<tbody id="listaSocios"><tr class="empty-row"><td colspan="7">Nenhum sócio cadastrado ainda.</td></tr></tbody>
+						<thead><tr><th>Sócio</th><th>Categoria</th><th>Mensalidade</th><th>Bar no mês</th><th>Carne</th><th>Total a cobrar</th><th>Status</th><th>Ações</th></tr></thead>
+						<tbody id="listaSocios"><tr class="empty-row"><td colspan="8">Nenhum sócio cadastrado ainda.</td></tr></tbody>
 					</table>
 				</div>
 			</section>

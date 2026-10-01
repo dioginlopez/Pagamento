@@ -72,7 +72,7 @@ h2 { margin: 0; font-size: 19px; }
 .icone-resumo { display: grid; flex: 0 0 35px; place-items: center; width: 35px; height: 35px; border-radius: 8px; background: #f5e7e8; color: var(--red); font-size: 11px; font-weight: bold; }.destaque-verde .icone-resumo { background: #e5f4ec; color: var(--green); }.destaque-azul .icone-resumo { background: #e8f0fc; color: var(--blue); }.destaque-dourado .icone-resumo { background: #fff5dc; color: var(--gold); }
 .rotulo-resumo, .cartao-resumo small { display: block; color: var(--muted); font-size: 11px; }.cartao-resumo strong { display: block; margin: 5px 0 4px; font-size: 20px; }.cartao-resumo small { font-size: 10px; }
 
-.workspace-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 19px; }
+.workspace-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin-bottom: 19px; }
 .screen-view { display: none; }
 .screen-view.screen-active { display: block; }
 .grade-resumo.screen-active { display: grid; }
